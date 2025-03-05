@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+
+  categories Category[]
+}
+
+enum ItemPlan {
+  GIVE_AWAY
+  DISCARD
+  SELL
+  KEEP
+  UNDECIDED
+}
+
+model Item {
+  id         String         @id @default(uuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  name       String
+  pieces     Int
+  deadline   DateTime
+  startDate  DateTime // reset when deadline is changed, display in the reminder email as XXX ago
+  plan       ItemPlan
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  archivedAt DateTime?
+  image      String?
+  reminders  ItemReminder[]
+  category   Category?      @relation(fields: [categoryId], references: [id])
+  categoryId String?
+}
+
+enum ItemReminderType {
+  FIRST
+  SECOND
+  THIRD
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, name])
+}
+
+// not in use yet
+model ItemReminder {
+  id        String           @id @default(uuid())
+  itemId    String
+  item      Item             @relation(fields: [itemId], references: [id])
+  type      ItemReminderType
+  sentAt    DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
