@@ -5,15 +5,11 @@ import { useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddItemForm from "./AddItemForm";
 import { Category } from "@prisma/client";
+import { useItemsContext } from "./Providers/useItemsContext";
 
-const AddItemPanel = ({
-  itemCount,
-  categories,
-}: {
-  itemCount: number;
-  categories: Category[];
-}) => {
-  const [isExpanded, setIsExpanded] = useState(itemCount < 1);
+const AddItemPanel = ({ categories }: { categories: Category[] }) => {
+  const { items } = useItemsContext();
+  const [isExpanded, setIsExpanded] = useState(items.length < 1);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">

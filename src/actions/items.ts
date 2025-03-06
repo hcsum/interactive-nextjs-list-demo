@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/session";
-import { Item, ItemPlan, Prisma } from "@prisma/client";
+import { Item, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
@@ -147,11 +147,12 @@ export async function createItem(
       pieces,
       deadline: deadlineInDate,
       startDate: new Date(),
-      plan: ItemPlan.UNDECIDED,
       user: { connect: { id: userId } },
       category: categoryId ? { connect: { id: categoryId } } : undefined,
     },
   });
+
+  revalidatePath("/");
 
   return {
     item,
@@ -187,7 +188,6 @@ export async function createManyItems(
       deadline: new Date(
         new Date().setMonth(new Date().getMonth() + item.deadline),
       ),
-      plan: ItemPlan.UNDECIDED,
     })),
   });
   revalidatePath("/");
@@ -198,6 +198,7 @@ export async function deleteItem(id: string) {
   await prisma.item.delete({
     where: { id, userId: userId },
   });
+  revalidatePath("/");
 }
 
 export async function updateItem(id: string, data: Partial<ItemUpdateInput>) {
@@ -267,7 +268,6 @@ export async function createDemoItems(userId: string) {
         pieces: 1,
         startDate: new Date(),
         deadline: new Date(new Date().setMonth(new Date().getMonth() + 3)),
-        plan: ItemPlan.UNDECIDED,
       },
       {
         userId,
@@ -275,7 +275,6 @@ export async function createDemoItems(userId: string) {
         pieces: 1,
         startDate: new Date(),
         deadline: new Date(new Date().setDate(new Date().getDate() + 6)),
-        plan: ItemPlan.UNDECIDED,
       },
       {
         userId,
@@ -283,7 +282,6 @@ export async function createDemoItems(userId: string) {
         pieces: 1,
         startDate: new Date(),
         deadline: new Date(new Date().setDate(new Date().getDate() - 1)),
-        plan: ItemPlan.UNDECIDED,
       },
     ],
   });

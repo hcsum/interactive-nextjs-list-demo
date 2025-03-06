@@ -12,28 +12,21 @@ import {
   FormHelperText,
 } from "@mui/material";
 import { Category } from "@prisma/client";
-// import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { ERROR_FREE_TRAIL_ITEM_LIMIT } from "@/lib/definitions";
 import { useSnackbarState } from "./Providers/SnackbarProvider";
-import { useRef, useTransition } from "react";
+import { useRef } from "react";
 import { useItemsContext } from "./Providers/useItemsContext";
 
 const AddItemForm = ({ categories }: { categories: Category[] }) => {
-  const { setItems } = useItemsContext();
+  const { updateOptimisticItems } = useItemsContext();
   const formRef = useRef<HTMLFormElement>(null);
-  const [, startTransition] = useTransition();
-  // const router = useRouter();
   const { setSnackBarContent } = useSnackbarState();
   const { mutate, isPending, data } = useMutation({
     mutationFn: createItem,
     onSettled(data) {
       if (data?.item) {
         formRef.current?.reset();
-        // router.push("/?page=1");
-        startTransition(() => {
-          setItems({ type: "add", item: data.item! });
-        });
       }
       if (data?.errors?.freeTrailLimitReached) {
         setSnackBarContent({
@@ -44,10 +37,29 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
     },
   });
 
+  const addItemAction = async (formData: FormData) => {
+    updateOptimisticItems({
+      type: "add",
+      item: {
+        id: "aaa",
+        userId: "aaa",
+        name: "Adding...",
+        pieces: 1,
+        deadline: new Date(new Date().getTime() + 30 * 24 * 3600 * 1000),
+        startDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        archivedAt: null,
+        categoryId: null,
+      },
+    });
+    await mutate(formData);
+  };
+
   return (
     <Box
       ref={formRef}
-      action={mutate}
+      action={addItemAction}
       component="form"
       sx={{ mb: 3, display: "flex", flexDirection: "column", gap: 2 }}
     >

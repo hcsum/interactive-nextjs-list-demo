@@ -57,8 +57,7 @@ const ItemTable = ({
   const [isLetGoDialogOpen, setIsLetGoDialogOpen] = useState(false);
   const [page, setPage] = useState(currentPage);
   const { setDialogContent } = useDialogState();
-  const { items, setItems } = useItemsContext();
-  console.log("items", items);
+  const { items, updateOptimisticItems } = useItemsContext();
 
   const queryObject = useMemo(() => {
     const params = new URLSearchParams();
@@ -116,10 +115,9 @@ const ItemTable = ({
         content: `Are you sure you want to delete ${editingItem!.name}?`,
         onConfirm: async () => {
           startDeleteTransition(() => {
-            setItems({ type: "delete", item: { id: itemId } });
+            updateOptimisticItems({ type: "delete", itemId });
           });
           deleteItem(itemId);
-          router.refresh();
         },
       });
       return;
@@ -135,7 +133,7 @@ const ItemTable = ({
         categoryId: formData.get("categoryId") as string,
       };
 
-      setItems({ type: "update", item: data });
+      updateOptimisticItems({ type: "update", item: data });
 
       const result = await updateItem(itemId, data);
 

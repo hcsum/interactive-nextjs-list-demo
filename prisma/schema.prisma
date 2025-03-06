@@ -16,36 +16,19 @@ model User {
   categories Category[]
 }
 
-enum ItemPlan {
-  GIVE_AWAY
-  DISCARD
-  SELL
-  KEEP
-  UNDECIDED
-}
-
 model Item {
-  id         String         @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
-  user       User           @relation(fields: [userId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
   name       String
   pieces     Int
   deadline   DateTime
   startDate  DateTime // reset when deadline is changed, display in the reminder email as XXX ago
-  plan       ItemPlan
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
-  image      String?
-  reminders  ItemReminder[]
-  category   Category?      @relation(fields: [categoryId], references: [id])
+  category   Category? @relation(fields: [categoryId], references: [id])
   categoryId String?
-}
-
-enum ItemReminderType {
-  FIRST
-  SECOND
-  THIRD
 }
 
 model Category {
@@ -58,15 +41,4 @@ model Category {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, name])
-}
-
-// not in use yet
-model ItemReminder {
-  id        String           @id @default(uuid())
-  itemId    String
-  item      Item             @relation(fields: [itemId], references: [id])
-  type      ItemReminderType
-  sentAt    DateTime
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
 }

@@ -11,7 +11,7 @@ export type EditingItem = ItemUpdateInput & {
 
 export type ItemReducerAction =
   | { type: "update"; item: EditingItem }
-  | { type: "delete"; item: { id: string } }
+  | { type: "delete"; itemId: string }
   | { type: "add"; item: Item };
 
 export const itemReducer = (
@@ -26,9 +26,8 @@ export const itemReducer = (
           : item,
       );
     case "delete":
-      return state.filter((item) => item.id !== action.item.id);
+      return state.filter((item) => item.id !== action.itemId);
     case "add":
-      console.log("add", action.item);
       return [action.item, ...state];
     default:
       return state;
@@ -37,7 +36,7 @@ export const itemReducer = (
 
 export const ItemsContext = createContext<{
   items: (Item & { updating?: boolean })[];
-  setItems: (action: ItemReducerAction) => void;
+  updateOptimisticItems: (action: ItemReducerAction) => void;
 } | null>(null);
 
 export const ItemsProvider = ({
@@ -52,9 +51,14 @@ export const ItemsProvider = ({
     ItemReducerAction
   >(items, itemReducer);
 
+  console.log("optimisticItems", optimisticItems);
+
   return (
     <ItemsContext.Provider
-      value={{ items: optimisticItems, setItems: updateOptimisticItems }}
+      value={{
+        items: optimisticItems,
+        updateOptimisticItems,
+      }}
     >
       {children}
     </ItemsContext.Provider>

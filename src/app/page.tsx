@@ -27,9 +27,9 @@ const Dashboard = async ({
   const categories = await getCategories();
 
   return (
-    <div className="flex justify-center px-6 w-full pb-12 min-h-[120vh] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      <div className="w-full lg:max-w-[90%] mt-4 md:mt-8">
-        <ItemsProvider items={items}>
+    <ItemsProvider items={items}>
+      <div className="flex justify-center px-6 w-full pb-12 min-h-[120vh] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+        <div className="w-full lg:max-w-[90%] mt-4 md:mt-8">
           <div className="flex flex-col lg:flex-row lg:gap-8">
             <div className="lg:w-2/3 order-2 lg:order-1">
               <div className="flex justify-between items-center mb-6">
@@ -47,13 +47,13 @@ const Dashboard = async ({
             </div>
 
             <div className="lg:w-1/3 order-1 lg:order-2 mb-8 lg:mb-32">
-              <AddItemPanel itemCount={items.length} categories={categories} />
+              <AddItemPanel categories={categories} />
               <CategoryPanel categories={categories} />
             </div>
           </div>
-        </ItemsProvider>
+        </div>
       </div>
-    </div>
+    </ItemsProvider>
   );
 };
 
