@@ -2,7 +2,9 @@
 
 import React, { useEffect } from "react";
 import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import { useLightDarkMode } from "./Providers/LightDarkModeProvider";
+import { Button } from "@mui/material";
 
 const Header: React.FC = () => {
   const { mode, toggleMode } = useLightDarkMode();
@@ -22,6 +24,13 @@ const Header: React.FC = () => {
           Interactive List Demo
         </p>
         <div className="flex items-center space-x-6">
+          <Button
+            variant="text"
+            target="_blank"
+            href="https://github.com/hcsum/interactive-nextjs-list-demo"
+          >
+            <GitHubIcon className="h-6 w-6 text-gray-800 dark:text-gray-300" />
+          </Button>
           <button
             onClick={toggleMode}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
