@@ -16,10 +16,10 @@ import { useMutation } from "@tanstack/react-query";
 import { ERROR_FREE_TRAIL_ITEM_LIMIT } from "@/lib/definitions";
 import { useSnackbarState } from "./Providers/SnackbarProvider";
 import { useRef } from "react";
-import { useItemsContext } from "./Providers/useItemsContext";
+import { useOptimisticItemsContext } from "./Providers/useOptimisticItemsContext";
 
 const AddItemForm = ({ categories }: { categories: Category[] }) => {
-  const { updateOptimisticItems } = useItemsContext();
+  const { updateOptimisticItems } = useOptimisticItemsContext();
   const formRef = useRef<HTMLFormElement>(null);
   const { setSnackBarContent } = useSnackbarState();
   const { mutate, isPending, data } = useMutation({
@@ -37,12 +37,12 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
     },
   });
 
-  const addItemAction = async (formData: FormData) => {
+  const addItemAction = (formData: FormData) => {
     updateOptimisticItems({
       type: "add",
       item: {
-        id: "aaa",
-        userId: "aaa",
+        id: "xxx",
+        userId: "xxx",
         name: "Adding...",
         pieces: 1,
         deadline: new Date(new Date().getTime() + 30 * 24 * 3600 * 1000),
@@ -53,7 +53,7 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
         categoryId: null,
       },
     });
-    await mutate(formData);
+    mutate(formData);
   };
 
   return (

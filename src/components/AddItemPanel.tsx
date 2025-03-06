@@ -5,10 +5,10 @@ import { useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddItemForm from "./AddItemForm";
 import { Category } from "@prisma/client";
-import { useItemsContext } from "./Providers/useItemsContext";
+import { useOptimisticItemsContext } from "./Providers/useOptimisticItemsContext";
 
 const AddItemPanel = ({ categories }: { categories: Category[] }) => {
-  const { items } = useItemsContext();
+  const { items } = useOptimisticItemsContext();
   const [isExpanded, setIsExpanded] = useState(items.length < 1);
 
   return (

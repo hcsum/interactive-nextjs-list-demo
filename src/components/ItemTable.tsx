@@ -1,11 +1,11 @@
 "use client";
 
-import { deleteItem, updateItem, archiveItem } from "@/actions/items";
+import { deleteItem, updateItem } from "@/actions/items";
 import { Prisma, Category } from "@prisma/client";
 import { useEffect, useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import TextField from "@mui/material/TextField";
-import { MenuItem, Pagination, Select, Chip, Button } from "@mui/material";
+import { MenuItem, Pagination, Select, Chip } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
@@ -15,10 +15,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import ItemSkeleton from "./ItemSkeleton";
-import LetGoDialog from "./LetGoDialog";
 import { useDialogState } from "./Providers/DialogProvider";
-import { EditingItem } from "./Providers/ItemsProvider";
-import { useItemsContext } from "./Providers/useItemsContext";
+import { EditingItem } from "./Providers/OptimisticItemsProvider";
+import { useOptimisticItemsContext } from "./Providers/useOptimisticItemsContext";
 
 type Item = Prisma.ItemGetPayload<null>;
 
@@ -50,14 +49,12 @@ const ItemTable = ({
   const [validationErrors, setValidationErrors] = useState<{
     [field: string]: string[];
   }>({});
-  const [isArchiving, setIsArchiving] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [, startDeleteTransition] = useTransition();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [isLetGoDialogOpen, setIsLetGoDialogOpen] = useState(false);
   const [page, setPage] = useState(currentPage);
   const { setDialogContent } = useDialogState();
-  const { items, updateOptimisticItems } = useItemsContext();
+  const { items, updateOptimisticItems } = useOptimisticItemsContext();
 
   const queryObject = useMemo(() => {
     const params = new URLSearchParams();
@@ -122,47 +119,26 @@ const ItemTable = ({
       });
       return;
     }
-    try {
-      setEditingItem(null);
 
-      const data = {
-        id: itemId,
-        name: formData.get("name") as string,
-        pieces: parseInt(formData.get("pieces") as string),
-        deadline: new Date(formData.get("deadline") as string),
-        categoryId: formData.get("categoryId") as string,
-      };
+    setEditingItem(null);
 
-      updateOptimisticItems({ type: "update", item: data });
+    const data = {
+      id: itemId,
+      name: formData.get("name") as string,
+      pieces: parseInt(formData.get("pieces") as string),
+      deadline: new Date(formData.get("deadline") as string),
+      categoryId: formData.get("categoryId") as string,
+    };
 
-      const result = await updateItem(itemId, data);
+    updateOptimisticItems({ type: "update", item: data });
 
-      if (result?.errors) {
-        setValidationErrors(result.errors);
-        return;
-      }
-      setValidationErrors({});
-    } catch (error) {
-      console.error("Error updating item:", error);
+    const result = await updateItem(itemId, data);
+
+    if (result?.errors) {
+      setValidationErrors(result.errors);
+      return;
     }
-  };
-
-  const handleDelete = async () => {
-    setIsLetGoDialogOpen(false);
-    const itemId = editingItem!.id;
-
-    setDialogContent({
-      title: "Confirm Deletion",
-      content: `Are you sure you want to delete ${editingItem!.name}?`,
-      onConfirm: async () => {
-        try {
-          await deleteItem(itemId);
-          router.refresh();
-        } catch (error) {
-          console.error("Error deleting item:", error);
-        }
-      },
-    });
+    setValidationErrors({});
   };
 
   const handlePageChange = (
@@ -193,11 +169,6 @@ const ItemTable = ({
     });
   };
 
-  const handleLetGo = (item: Item) => {
-    setEditingItem(item);
-    setIsLetGoDialogOpen(true);
-  };
-
   const isExpiringSoon = (deadline: Date) => {
     const now = new Date();
     const oneWeekFromNow = new Date(now);
@@ -208,29 +179,6 @@ const ItemTable = ({
   const isExpired = (deadline: Date) => {
     const now = new Date();
     return deadline < now;
-  };
-
-  const handleLetGoClose = () => {
-    setIsLetGoDialogOpen(false);
-    setEditingItem(null);
-  };
-
-  const handleArchive = async () => {
-    setDialogContent({
-      title: "Confirm Archiving",
-      content: `Are you sure you want to archive ${editingItem!.name}?`,
-      onConfirm: async () => {
-        setIsLetGoDialogOpen(false);
-        setIsArchiving(editingItem!.id);
-        await archiveItem(editingItem!.id);
-        router.refresh();
-        setIsArchiving(null);
-      },
-    });
-  };
-
-  const handleNotYet = () => {
-    setIsLetGoDialogOpen(false);
   };
 
   return (
@@ -295,7 +243,7 @@ const ItemTable = ({
                 key={item.id}
                 className={`p-4 md:p-8 border rounded-lg transition-colors ${
                   new Date().getTime() - new Date(item.updatedAt).getTime() <
-                    1000 * 10 || isArchiving === item.id
+                  1000 * 10
                     ? "fade-animation"
                     : ""
                 } ${
@@ -430,36 +378,23 @@ const ItemTable = ({
                           value="delete"
                           type="submit"
                           disabled={item.updating}
-                          className="p-2 text-red-500 hover:bg-red-100 rounded-lg dark:hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-red-500 hover:bg-red-200 rounded-lg dark:hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <DeleteIcon />
                         </button>
                       </>
                     ) : (
-                      <>
-                        {expired ? (
-                          <Button
-                            type="button"
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleLetGo(item)}
-                          >
-                            Ready to let go?
-                          </Button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={item.updating}
-                            className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg dark:hover:bg-blue-900"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              handleEditClick(item);
-                            }}
-                          >
-                            <EditIcon />
-                          </button>
-                        )}
-                      </>
+                      <button
+                        type="button"
+                        disabled={item.updating}
+                        className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg dark:hover:bg-blue-900"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          handleEditClick(item);
+                        }}
+                      >
+                        <EditIcon />
+                      </button>
                     )}
                   </div>
                 </form>
@@ -473,13 +408,6 @@ const ItemTable = ({
           )}
         </div>
       )}
-      <LetGoDialog
-        open={isLetGoDialogOpen}
-        onClose={handleLetGoClose}
-        onArchive={handleArchive}
-        onDelete={handleDelete}
-        onNotYet={handleNotYet}
-      />
     </div>
   );
 };
