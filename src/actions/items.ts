@@ -21,7 +21,7 @@ export type ItemUpdateInput = {
   name?: string;
   pieces?: number;
   deadline?: Date;
-  categoryId?: string | null;
+  categoryId?: string;
 };
 
 const CreateItemFormSchema = z.object({

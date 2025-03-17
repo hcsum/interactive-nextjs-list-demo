@@ -25,9 +25,6 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
   const { mutate, isPending, data } = useMutation({
     mutationFn: createItem,
     onSettled(data) {
-      if (data?.item) {
-        formRef.current?.reset();
-      }
       if (data?.errors?.freeTrailLimitReached) {
         setSnackBarContent({
           message: ERROR_FREE_TRAIL_ITEM_LIMIT,
@@ -38,13 +35,14 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
   });
 
   const addItemAction = (formData: FormData) => {
+    formRef.current?.reset();
     updateOptimisticItems({
       type: "add",
       item: {
         id: "xxx",
         userId: "xxx",
-        name: "Adding...",
-        pieces: 1,
+        name: formData.get("name") as string,
+        pieces: parseInt(formData.get("pieces") as string),
         deadline: new Date(new Date().getTime() + 30 * 24 * 3600 * 1000),
         startDate: new Date(),
         createdAt: new Date(),

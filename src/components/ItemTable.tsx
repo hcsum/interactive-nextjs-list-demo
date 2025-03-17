@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteItem, updateItem } from "@/actions/items";
-import { Prisma, Category } from "@prisma/client";
+import { Category } from "@prisma/client";
 import { useEffect, useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import TextField from "@mui/material/TextField";
@@ -16,10 +16,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import ItemSkeleton from "./ItemSkeleton";
 import { useDialogState } from "./Providers/DialogProvider";
-import { EditingItem } from "./Providers/OptimisticItemsProvider";
+import { OptimisticItem } from "./Providers/OptimisticItemsProvider";
 import { useOptimisticItemsContext } from "./Providers/useOptimisticItemsContext";
-
-type Item = Prisma.ItemGetPayload<null>;
+import "@/app/styles.css";
 
 const ItemTable = ({
   categories,
@@ -45,12 +44,10 @@ const ItemTable = ({
     );
   }, [categories]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
     [field: string]: string[];
   }>({});
   const [isPending, startTransition] = useTransition();
-  const [, startDeleteTransition] = useTransition();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [page, setPage] = useState(currentPage);
   const { setDialogContent } = useDialogState();
@@ -98,36 +95,32 @@ const ItemTable = ({
     }
   };
 
-  const handleEditClick = (item: Item) => {
-    setEditingItem(item);
-  };
-
-  const handleSaveClick = async (formData: FormData) => {
+  const handleItemChange = async (formData: FormData) => {
     const action = formData.get("action") as string;
     const itemId = formData.get("itemId") as string;
+    const name = formData.get("name") as string;
+    const pieces = parseInt(formData.get("pieces") as string);
+    const deadline = new Date(formData.get("deadline") as string);
+    const categoryId = formData.get("categoryId") as string;
 
     if (action === "delete") {
       setDialogContent({
         title: "Confirm Deletion",
-        content: `Are you sure you want to delete ${editingItem!.name}?`,
+        content: `Are you sure you want to delete ${name}?`,
         onConfirm: async () => {
-          startDeleteTransition(() => {
-            updateOptimisticItems({ type: "delete", itemId });
-          });
+          updateOptimisticItems({ type: "delete", itemId });
           deleteItem(itemId);
         },
       });
       return;
     }
 
-    setEditingItem(null);
-
     const data = {
       id: itemId,
-      name: formData.get("name") as string,
-      pieces: parseInt(formData.get("pieces") as string),
-      deadline: new Date(formData.get("deadline") as string),
-      categoryId: formData.get("categoryId") as string,
+      name,
+      pieces,
+      deadline,
+      categoryId,
     };
 
     updateOptimisticItems({ type: "update", item: data });
@@ -167,18 +160,6 @@ const ItemTable = ({
     startTransition(() => {
       router.push(`/?${updatedParams.toString()}`);
     });
-  };
-
-  const isExpiringSoon = (deadline: Date) => {
-    const now = new Date();
-    const oneWeekFromNow = new Date(now);
-    oneWeekFromNow.setDate(now.getDate() + 7);
-    return deadline <= oneWeekFromNow && deadline >= now;
-  };
-
-  const isExpired = (deadline: Date) => {
-    const now = new Date();
-    return deadline < now;
   };
 
   return (
@@ -234,171 +215,17 @@ const ItemTable = ({
       {isPending ? (
         <ItemSkeleton />
       ) : (
-        <div className="space-y-4 mb-6">
+        <div className={`space-y-4 mb-6 `}>
           {items.map((item) => {
-            const expiringSoon = isExpiringSoon(item.deadline);
-            const expired = isExpired(item.deadline);
             return (
-              <div
+              <ItemForm
                 key={item.id}
-                className={`p-4 md:p-8 border rounded-lg transition-colors ${
-                  new Date().getTime() - new Date(item.updatedAt).getTime() <
-                  1000 * 10
-                    ? "fade-animation"
-                    : ""
-                } ${
-                  expired
-                    ? "border-red-500 bg-red-100 dark:border-red-400 dark:bg-gray-900 opacity-75"
-                    : expiringSoon
-                      ? "border-orange-500 bg-orange-100 dark:border-orange-400 dark:bg-gray-900 opacity-75"
-                      : "dark:border-gray-700"
-                }`}
-              >
-                <form
-                  action={handleSaveClick}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                >
-                  <input type="hidden" name="itemId" value={item.id} />
-                  <div className="flex-[1.5]">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Item:
-                    </div>
-                    {editingItem?.id === item.id && !item.updating ? (
-                      <TextField
-                        fullWidth
-                        defaultValue={editingItem?.name}
-                        name="name"
-                        error={!!validationErrors.name}
-                        helperText={validationErrors.name?.join(", ")}
-                        size="small"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <h3 className="text-gray-900 dark:text-gray-100 max-w-[200px] break-words">
-                        {item.name}
-                      </h3>
-                    )}
-                  </div>
-
-                  <div className="flex-[0.5]">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Pieces:
-                    </div>
-                    {editingItem?.id === item.id && !item.updating ? (
-                      <TextField
-                        type="number"
-                        defaultValue={item.pieces}
-                        name="pieces"
-                        error={!!validationErrors.pieces}
-                        helperText={validationErrors.pieces?.join(", ")}
-                        size="small"
-                        variant="outlined"
-                      />
-                    ) : (
-                      <div className="text-gray-900 dark:text-gray-100">
-                        {item.pieces}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Category:
-                    </div>
-                    {editingItem?.id === item.id && !item.updating ? (
-                      <Select
-                        defaultValue={item.categoryId ?? ""}
-                        name="categoryId"
-                        size="small"
-                        variant="outlined"
-                      >
-                        <MenuItem value="">None</MenuItem>
-                        {categories.map((category) => (
-                          <MenuItem key={category.id} value={category.id}>
-                            {category.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    ) : (
-                      <div className="text-gray-900 dark:text-gray-100">
-                        {categoryMap[item.categoryId ?? ""]?.name ?? "-"}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Deadline:
-                    </div>
-                    {editingItem?.id === item.id && !item.updating ? (
-                      <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker
-                          name="deadline"
-                          defaultValue={item.deadline}
-                          shouldDisableDate={(date) => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            return date <= today;
-                          }}
-                          format="MM/dd/yyyy"
-                          slotProps={{
-                            textField: {
-                              size: "small",
-                              fullWidth: true,
-                              error: !!validationErrors.deadline,
-                              helperText: validationErrors.deadline?.join(", "),
-                            },
-                          }}
-                        />
-                      </LocalizationProvider>
-                    ) : (
-                      <div className="text-gray-900 dark:text-gray-100">
-                        {expired ? "Expired " : ""}
-                        {`${formatDistanceToNow(item.deadline, {
-                          addSuffix: true,
-                        })}`}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3">
-                    {editingItem?.id === item.id && !item.updating ? (
-                      <>
-                        <button
-                          name="action"
-                          value="update"
-                          type="submit"
-                          disabled={item.updating}
-                          className="p-2 text-green-500 hover:bg-green-100 rounded-lg dark:hover:bg-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <SaveIcon />
-                        </button>
-                        <button
-                          name="action"
-                          value="delete"
-                          type="submit"
-                          disabled={item.updating}
-                          className="p-2 text-red-500 hover:bg-red-200 rounded-lg dark:hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <DeleteIcon />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={item.updating}
-                        className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg dark:hover:bg-blue-900"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          handleEditClick(item);
-                        }}
-                      >
-                        <EditIcon />
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
+                item={item}
+                validationErrors={validationErrors}
+                categoryMap={categoryMap}
+                categories={categories}
+                handleChange={handleItemChange}
+              />
             );
           })}
           {items.length === 0 && (
@@ -408,6 +235,185 @@ const ItemTable = ({
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+const ItemForm = ({
+  item,
+  validationErrors,
+  categoryMap,
+  categories,
+  handleChange,
+}: {
+  item: OptimisticItem;
+  validationErrors: {
+    [field: string]: string[];
+  };
+  categoryMap: Record<string, Category>;
+  categories: Category[];
+  handleChange: (formData: FormData) => Promise<void>;
+}) => {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsEditing(false);
+    handleChange(new FormData(event.target as HTMLFormElement));
+  };
+
+  const isNewlyModified =
+    new Date().getTime() - new Date(item.updatedAt).getTime() < 1000 * 10;
+
+  return (
+    <div
+      key={item.id}
+      className={`p-4 md:p-8 border rounded-lg transition-colors ${
+        isNewlyModified ? "fade-animation" : ""
+      }`}
+    >
+      <form
+        onSubmit={handleSave}
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
+        <input type="hidden" name="itemId" value={item.id} />
+        <div className="flex-[1.5]">
+          <div className="text-sm text-gray-500 dark:text-gray-400">Item:</div>
+          {isEditing ? (
+            <TextField
+              fullWidth
+              defaultValue={item.name}
+              name="name"
+              error={!!validationErrors.name}
+              helperText={validationErrors.name?.join(", ")}
+              size="small"
+              variant="outlined"
+            />
+          ) : (
+            <h3 className="text-gray-900 dark:text-gray-100 max-w-[200px] break-words">
+              {item.name}
+            </h3>
+          )}
+        </div>
+
+        <div className="flex-[0.5]">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Pieces:
+          </div>
+          {isEditing ? (
+            <TextField
+              type="number"
+              defaultValue={item.pieces}
+              name="pieces"
+              error={!!validationErrors.pieces}
+              helperText={validationErrors.pieces?.join(", ")}
+              size="small"
+              variant="outlined"
+            />
+          ) : (
+            <div className="text-gray-900 dark:text-gray-100">
+              {item.pieces}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Category:
+          </div>
+          {isEditing ? (
+            <Select
+              defaultValue={item.categoryId ?? ""}
+              name="categoryId"
+              size="small"
+              variant="outlined"
+            >
+              <MenuItem value="">None</MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          ) : (
+            <div className="text-gray-900 dark:text-gray-100">
+              {categoryMap[item.categoryId ?? ""]?.name ?? "-"}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Deadline:
+          </div>
+          {isEditing ? (
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                name="deadline"
+                defaultValue={item.deadline}
+                shouldDisableDate={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date <= today;
+                }}
+                format="MM/dd/yyyy"
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    fullWidth: true,
+                    error: !!validationErrors.deadline,
+                    helperText: validationErrors.deadline?.join(", "),
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          ) : (
+            <div className="text-gray-900 dark:text-gray-100">
+              {`${formatDistanceToNow(item.deadline, {
+                addSuffix: true,
+              })}`}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          {isEditing ? (
+            <>
+              <button
+                name="action"
+                value="update"
+                type="submit"
+                className="p-2 text-green-500 hover:bg-green-100 rounded-lg dark:hover:bg-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <SaveIcon />
+              </button>
+              <button
+                name="action"
+                value="delete"
+                type="submit"
+                className="p-2 text-red-500 hover:bg-red-200 rounded-lg dark:hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <DeleteIcon />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg dark:hover:bg-blue-900"
+              onClick={(event) => {
+                event.preventDefault();
+                handleEdit();
+              }}
+            >
+              <EditIcon />
+            </button>
+          )}
+        </div>
+      </form>
     </div>
   );
 };

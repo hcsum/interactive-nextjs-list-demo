@@ -2,21 +2,21 @@
 
 import { ItemUpdateInput } from "@/actions/items";
 import { Item } from "@prisma/client";
-import { createContext, useOptimistic } from "react";
+import { createContext, useOptimistic, useTransition } from "react";
 
 export type EditingItem = ItemUpdateInput & {
   id: string;
-  updating?: boolean;
 };
+
+export type OptimisticItem = Item & { updating?: boolean };
 
 export type ItemReducerAction =
   | { type: "update"; item: EditingItem }
   | { type: "delete"; itemId: string }
-  | { type: "archive"; itemId: string }
   | { type: "add"; item: Item };
 
 export const itemReducer = (
-  state: (Item & { updating?: boolean })[],
+  state: OptimisticItem[],
   action: ItemReducerAction,
 ) => {
   switch (action.type) {
@@ -27,7 +27,6 @@ export const itemReducer = (
           : item,
       );
     case "delete":
-    case "archive":
       return state.filter((item) => item.id !== action.itemId);
     case "add":
       return [action.item, ...state];
@@ -37,7 +36,7 @@ export const itemReducer = (
 };
 
 export const OptimisticItemsContext = createContext<{
-  items: (Item & { updating?: boolean })[];
+  items: OptimisticItem[];
   updateOptimisticItems: (action: ItemReducerAction) => void;
 } | null>(null);
 
@@ -48,10 +47,17 @@ export const ItemsProvider = ({
   children: React.ReactNode;
   items: Item[];
 }) => {
-  const [optimisticItems, updateOptimisticItems] = useOptimistic<
-    (Item & { updating?: boolean })[],
+  const [optimisticItems, updateItems] = useOptimistic<
+    OptimisticItem[],
     ItemReducerAction
   >(items, itemReducer);
+  const [, startTransition] = useTransition();
+
+  const updateOptimisticItems = (action: ItemReducerAction) => {
+    startTransition(() => {
+      updateItems(action);
+    });
+  };
 
   console.log("optimisticItems", optimisticItems);
 

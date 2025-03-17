@@ -1,6 +1,5 @@
 import { getItems } from "@/actions/items";
 import { getCategories } from "@/actions/category";
-import "./styles.css";
 import { ItemsProvider } from "@/components/Providers/OptimisticItemsProvider";
 import ItemTable from "@/components/ItemTable";
 import AddItemPanel from "@/components/AddItemPanel";
