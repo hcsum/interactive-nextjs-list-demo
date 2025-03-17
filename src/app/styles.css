@@ -24,3 +24,17 @@
 .fade-animation {
   animation: fadeBackground 2s linear;
 }
+
+@keyframes modifiedBackground {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.modified-animation {
+  animation: modifiedBackground 2s linear;
+}

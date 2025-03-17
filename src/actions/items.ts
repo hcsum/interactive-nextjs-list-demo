@@ -28,6 +28,7 @@ const CreateItemFormSchema = z.object({
   name: z
     .string()
     .min(2, { message: "Name must be at least 2 characters long." })
+    .max(20, { message: "Name must be at most 20 characters long." })
     .trim(),
   pieces: z.coerce.number().min(1, { message: "Must be at least 1 piece." }),
   deadline: z.coerce.number().min(1, { message: "Invalid deadline." }),

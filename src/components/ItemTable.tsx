@@ -103,6 +103,15 @@ const ItemTable = ({
     const deadline = new Date(formData.get("deadline") as string);
     const categoryId = formData.get("categoryId") as string;
 
+    console.log(
+      "handleItemChange",
+      action,
+      itemId,
+      name,
+      pieces,
+      deadline,
+      categoryId,
+    );
     if (action === "delete") {
       setDialogContent({
         title: "Confirm Deletion",
@@ -254,16 +263,18 @@ const ItemForm = ({
   categories: Category[];
   handleChange: (formData: FormData) => Promise<void>;
 }) => {
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editing, setEditing] = useState<boolean>(false);
 
   const handleEdit = () => {
-    setIsEditing(true);
+    setEditing(true);
   };
 
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsEditing(false);
-    handleChange(new FormData(event.target as HTMLFormElement));
+  const isEditing = !item.updating && editing;
+
+  const handleSave = (formData: FormData) => {
+    // if use form action, setIsEditing(false) will be delayed after the action is settled
+    setEditing(false);
+    handleChange(formData);
   };
 
   const isNewlyModified =
@@ -273,11 +284,11 @@ const ItemForm = ({
     <div
       key={item.id}
       className={`p-4 md:p-8 border rounded-lg transition-colors ${
-        isNewlyModified ? "fade-animation" : ""
+        isNewlyModified ? "modified-animation" : ""
       }`}
     >
       <form
-        onSubmit={handleSave}
+        action={handleSave}
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <input type="hidden" name="itemId" value={item.id} />
