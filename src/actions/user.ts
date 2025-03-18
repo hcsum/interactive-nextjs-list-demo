@@ -1,5 +1,5 @@
 "use server";
-import { createSession } from "@/lib/session";
+import { createSession, verifySession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { createDemoItems } from "./items";
@@ -24,7 +24,26 @@ export async function createTempUser() {
   redirect("/");
 }
 
-export async function deleteUsers10DaysOld() {
+export async function getUserBySession() {
+  const { userId } = await verifySession();
+
+  const result = await prisma.user.findUnique({
+    where: {
+      id: userId as string,
+    },
+  });
+
+  if (!result) {
+    // (await cookies()).delete("session"); // won't work, nextjs complains: Cookies can only be modified in a Server Action or Route Handler.
+    // so this is not a freaking server action, just a server function, wtf
+    // heck: redirect to a path call /logout, and modify cookie there, then redirect to login page.
+    redirect("/logout");
+  }
+
+  return result;
+}
+
+async function deleteUsers10DaysOld() {
   await prisma.user.deleteMany({
     where: {
       createdAt: {

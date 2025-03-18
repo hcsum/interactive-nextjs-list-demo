@@ -4,6 +4,7 @@ import { ItemsProvider } from "@/components/Providers/OptimisticItemsProvider";
 import ItemTable from "@/components/ItemTable";
 import AddItemPanel from "@/components/AddItemPanel";
 import CategoryPanel from "@/components/CategoryPanel";
+import { getUserBySession } from "@/actions/user";
 
 const Dashboard = async ({
   searchParams,
@@ -15,6 +16,7 @@ const Dashboard = async ({
     createTempUser?: string;
   }>;
 }) => {
+  await getUserBySession();
   const { page = "1", search = "", category = "" } = await searchParams;
   const currentPage = Number(page);
   const { items, totalPages, total } = await getItems(
