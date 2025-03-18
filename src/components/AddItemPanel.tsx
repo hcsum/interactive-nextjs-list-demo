@@ -5,11 +5,9 @@ import { useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddItemForm from "./AddItemForm";
 import { Category } from "@prisma/client";
-import { useOptimisticItemsContext } from "./Providers/useOptimisticItemsContext";
 
 const AddItemPanel = ({ categories }: { categories: Category[] }) => {
-  const { items } = useOptimisticItemsContext();
-  const [isExpanded, setIsExpanded] = useState(items.length < 1);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
