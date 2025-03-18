@@ -4,10 +4,6 @@ import { ItemUpdateInput } from "@/actions/items";
 import { Item } from "@prisma/client";
 import { createContext, useOptimistic, useTransition } from "react";
 
-export type EditingItem = ItemUpdateInput & {
-  id: string;
-};
-
 export type OptimisticItem = Item & {
   updating?: boolean;
   deleting?: boolean;
@@ -15,7 +11,7 @@ export type OptimisticItem = Item & {
 };
 
 export type ItemReducerAction =
-  | { type: "update"; item: EditingItem }
+  | { type: "update"; item: ItemUpdateInput }
   | { type: "delete"; itemId: string }
   | { type: "create"; item: Item };
 
@@ -64,8 +60,6 @@ export const ItemsProvider = ({
       updateItems(action);
     });
   };
-
-  console.log("optimisticItems", optimisticItems);
 
   return (
     <OptimisticItemsContext.Provider

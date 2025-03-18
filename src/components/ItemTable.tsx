@@ -50,6 +50,7 @@ const ItemTable = ({
   const [isPending, startTransition] = useTransition();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [page, setPage] = useState(currentPage);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { setDialogContent } = useDialogState();
   const { items, updateOptimisticItems } = useOptimisticItemsContext();
 
@@ -95,6 +96,10 @@ const ItemTable = ({
     }
   };
 
+  const handleEditClick = (id: string) => {
+    setEditingId(id);
+  };
+
   const handleItemChange = async (formData: FormData) => {
     const action = formData.get("action") as string;
     const itemId = formData.get("itemId") as string;
@@ -103,15 +108,6 @@ const ItemTable = ({
     const deadline = new Date(formData.get("deadline") as string);
     const categoryId = formData.get("categoryId") as string;
 
-    console.log(
-      "handleItemChange",
-      action,
-      itemId,
-      name,
-      pieces,
-      deadline,
-      categoryId,
-    );
     if (action === "delete") {
       setDialogContent({
         title: "Confirm Deletion",
@@ -134,13 +130,14 @@ const ItemTable = ({
 
     updateOptimisticItems({ type: "update", item: data });
 
-    const result = await updateItem(itemId, data);
+    const result = await updateItem(data);
 
     if (result?.errors) {
       setValidationErrors(result.errors);
       return;
     }
     setValidationErrors({});
+    setEditingId(null);
   };
 
   const handlePageChange = (
@@ -230,10 +227,12 @@ const ItemTable = ({
               <ItemForm
                 key={item.id}
                 item={item}
-                validationErrors={validationErrors}
+                validationErrors={editingId === item.id ? validationErrors : {}}
                 categoryMap={categoryMap}
                 categories={categories}
+                editingId={editingId}
                 handleChange={handleItemChange}
+                handleEditClick={handleEditClick}
               />
             );
           })}
@@ -253,7 +252,9 @@ const ItemForm = ({
   validationErrors,
   categoryMap,
   categories,
+  editingId,
   handleChange,
+  handleEditClick,
 }: {
   item: OptimisticItem;
   validationErrors: {
@@ -261,22 +262,21 @@ const ItemForm = ({
   };
   categoryMap: Record<string, Category>;
   categories: Category[];
+  editingId: string | null;
   handleChange: (formData: FormData) => Promise<void>;
+  handleEditClick: (id: string) => void;
 }) => {
-  const [editing, setEditing] = useState<boolean>(false);
-
   const handleEdit = () => {
-    setEditing(true);
+    handleEditClick(item.id);
   };
 
   const handleSave = (formData: FormData) => {
-    // as this is a form action, setEditing(false) will be delayed till the action is settled
-    setEditing(false);
     handleChange(formData);
   };
 
-  // that's why need to check !item.updating to flip back to non-editing state after user clicks save
-  const isEditing = !item.updating && editing;
+  const isEditing =
+    (!item.updating && editingId === item.id) ||
+    Object.keys(validationErrors).length !== 0;
 
   const isNewlyCreated = item.creating;
   const isNewlyUpdated =

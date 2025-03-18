@@ -22,7 +22,7 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
   const { updateOptimisticItems } = useOptimisticItemsContext();
   const formRef = useRef<HTMLFormElement>(null);
   const { setSnackBarContent } = useSnackbarState();
-  const { mutate, isPending, data } = useMutation({
+  const { mutate, data } = useMutation({
     mutationFn: createItem,
     onSettled(data) {
       if (data?.errors?.freeTrailLimitReached) {
@@ -39,7 +39,7 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
     updateOptimisticItems({
       type: "create",
       item: {
-        id: "xxx",
+        id: new Date().getTime().toString(),
         userId: "xxx",
         name: formData.get("name") as string,
         pieces: parseInt(formData.get("pieces") as string),
@@ -128,13 +128,8 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
         <FormHelperText>Optional</FormHelperText>
       </FormControl>
 
-      <Button
-        type="submit"
-        variant="contained"
-        disabled={isPending}
-        sx={{ mt: 1 }}
-      >
-        {isPending ? "Adding..." : "Add Item"}
+      <Button type="submit" variant="contained" sx={{ mt: 1 }}>
+        Add Item
       </Button>
     </Box>
   );

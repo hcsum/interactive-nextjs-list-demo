@@ -18,6 +18,7 @@ export type ItemCreateInput = {
 };
 
 export type ItemUpdateInput = {
+  id: string;
   name?: string;
   pieces?: number;
   deadline?: Date;
@@ -28,7 +29,7 @@ const CreateItemFormSchema = z.object({
   name: z
     .string()
     .min(2, { message: "Name must be at least 2 characters long." })
-    .max(20, { message: "Name must be at most 20 characters long." })
+    .max(40, { message: "Name must be at most 40 characters long." })
     .trim(),
   pieces: z.coerce.number().min(1, { message: "Must be at least 1 piece." }),
   deadline: z.coerce.number().min(1, { message: "Invalid deadline." }),
@@ -39,6 +40,7 @@ const UpdateItemFormSchema = z.object({
   name: z
     .string()
     .min(2, { message: "Name must be at least 2 characters long." })
+    .max(40, { message: "Name must be at most 40 characters long." })
     .trim()
     .optional(),
   pieces: z.coerce
@@ -202,7 +204,7 @@ export async function deleteItem(id: string) {
   revalidatePath("/");
 }
 
-export async function updateItem(id: string, data: Partial<ItemUpdateInput>) {
+export async function updateItem(data: Partial<ItemUpdateInput>) {
   const { userId } = await verifySession();
 
   const validationResult = UpdateItemFormSchema.safeParse(data);
@@ -215,7 +217,7 @@ export async function updateItem(id: string, data: Partial<ItemUpdateInput>) {
 
   const item = await prisma.item.findUniqueOrThrow({
     where: {
-      id,
+      id: data.id,
       userId,
     },
   });
@@ -236,7 +238,7 @@ export async function updateItem(id: string, data: Partial<ItemUpdateInput>) {
 
   await prisma.item.update({
     where: {
-      id,
+      id: data.id,
       userId,
     },
     data: updateData,
