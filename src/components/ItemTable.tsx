@@ -269,22 +269,27 @@ const ItemForm = ({
     setEditing(true);
   };
 
-  const isEditing = !item.updating && editing;
-
   const handleSave = (formData: FormData) => {
-    // if use form action, setIsEditing(false) will be delayed after the action is settled
+    // as this is a form action, setEditing(false) will be delayed till the action is settled
     setEditing(false);
     handleChange(formData);
   };
 
-  const isNewlyModified =
+  // that's why need to check !item.updating to flip back to non-editing state after user clicks save
+  const isEditing = !item.updating && editing;
+
+  const isNewlyCreated = item.creating;
+  const isNewlyUpdated =
     new Date().getTime() - new Date(item.updatedAt).getTime() < 1000 * 10;
+  const isNewlyDeleted = item.deleting;
 
   return (
     <div
       key={item.id}
       className={`p-4 md:p-8 border rounded-lg transition-colors ${
-        isNewlyModified ? "modified-animation" : ""
+        isNewlyCreated ? "created-animation" : ""
+      } ${isNewlyUpdated ? "confirmed-animation" : ""} ${
+        isNewlyDeleted ? "deleting-animation" : ""
       }`}
     >
       <form

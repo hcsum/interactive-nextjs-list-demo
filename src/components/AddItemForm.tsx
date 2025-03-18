@@ -37,7 +37,7 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
   const addItemAction = (formData: FormData) => {
     formRef.current?.reset();
     updateOptimisticItems({
-      type: "add",
+      type: "create",
       item: {
         id: "xxx",
         userId: "xxx",
@@ -45,10 +45,10 @@ const AddItemForm = ({ categories }: { categories: Category[] }) => {
         pieces: parseInt(formData.get("pieces") as string),
         deadline: new Date(new Date().getTime() + 30 * 24 * 3600 * 1000),
         startDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
         archivedAt: null,
-        categoryId: null,
+        categoryId: formData.get("categoryId") as string,
       },
     });
     mutate(formData);

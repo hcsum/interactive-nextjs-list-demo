@@ -8,12 +8,16 @@ export type EditingItem = ItemUpdateInput & {
   id: string;
 };
 
-export type OptimisticItem = Item & { updating?: boolean };
+export type OptimisticItem = Item & {
+  updating?: boolean;
+  deleting?: boolean;
+  creating?: boolean;
+};
 
 export type ItemReducerAction =
   | { type: "update"; item: EditingItem }
   | { type: "delete"; itemId: string }
-  | { type: "add"; item: Item };
+  | { type: "create"; item: Item };
 
 export const itemReducer = (
   state: OptimisticItem[],
@@ -27,9 +31,11 @@ export const itemReducer = (
           : item,
       );
     case "delete":
-      return state.filter((item) => item.id !== action.itemId);
-    case "add":
-      return [action.item, ...state];
+      return state.map((item) =>
+        item.id === action.itemId ? { ...item, deleting: true } : item,
+      );
+    case "create":
+      return [{ ...action.item, creating: true }, ...state];
     default:
       return state;
   }
